@@ -1,8 +1,11 @@
+-- 削除
 DELETE FROM shulot.player;
+
+-- Men
 INSERT INTO
 	shulot.player
 VALUES
-	(UUID(), "吉崎広太", 1, 8, NOW(), NOW());
+	(UUID(), "吉崎", 1, 8, NOW(), NOW());
 INSERT INTO
 	shulot.player
 VALUES
@@ -15,6 +18,32 @@ INSERT INTO
 	shulot.player
 VALUES
 	(UUID(), "達真", 1, 4, NOW(), NOW());
+INSERT INTO
+	shulot.player
+VALUES
+	(UUID(), "山江", 1, 6, NOW(), NOW());
+INSERT INTO
+	shulot.player
+VALUES
+	(UUID(), "吉田", 1, 8, NOW(), NOW());
+INSERT INTO
+	shulot.player
+VALUES
+	(UUID(), "翔平", 1, 8, NOW(), NOW());
+INSERT INTO
+	shulot.player
+VALUES
+	(UUID(), "横山大輔", 1, 3, NOW(), NOW());
+INSERT INTO
+	shulot.player
+VALUES
+	(UUID(), "飯泉", 1, 8, NOW(), NOW());
+
+-- Women
+INSERT INTO
+	shulot.player
+VALUES
+	(UUID(), "りな", 2, 3, NOW(), NOW());
 INSERT INTO
 	shulot.player
 VALUES
@@ -31,3 +60,19 @@ INSERT INTO
 	shulot.player
 VALUES
 	(UUID(), "あっきー", 2, 2, NOW(), NOW());
+INSERT INTO
+	shulot.player
+VALUES
+	(UUID(), "岡本嫁", 2, 3, NOW(), NOW());
+INSERT INTO
+	shulot.player
+VALUES
+	(UUID(), "まゆみん", 2, 3, NOW(), NOW());
+INSERT INTO
+	shulot.player
+VALUES
+	(UUID(), "ともちゃん", 2, 4, NOW(), NOW());
+INSERT INTO
+	shulot.player
+VALUES
+	(UUID(), "のい", 2, 4, NOW(), NOW());

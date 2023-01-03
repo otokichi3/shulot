@@ -9,12 +9,14 @@ from dotenv import load_dotenv
 import os
 import logging
 import json
+import random
+import numpy
 
 formatter = (
     "[%(asctime)s][%(levelname)s][%(filename)s:%(lineno)d %(funcName)s] %(message)s"
 )
 logging.basicConfig(level=logging.DEBUG, format=formatter)
-# logging.disable(logging.INFO)
+logging.disable(logging.INFO)
 
 # SQLAlchemyのCRUD操作
 # https://qiita.com/curry__30/items/432a21426c02a68e77e8#read
@@ -94,8 +96,14 @@ async def root():
         for j in range(i + 1, player_count):
             pairs.append(
                 {
-                    "player1": {"name": players[i].name, "level": players[i].level},
-                    "player2": {"name": players[j].name, "level": players[j].level},
+                    "player1": {
+                        "name": players[i].name,
+                        "level": players[i].level,
+                    },
+                    "player2": {
+                        "name": players[j].name,
+                        "level": players[j].level,
+                    },
                     "pair_level": players[i].level + players[j].level,
                 }
             )
@@ -117,8 +125,41 @@ async def root():
         m for m in matchs if not (is_player_duplicated(m["pair1"], m["pair2"]))
     ]
     logging.debug(json.dumps(good_matchs, ensure_ascii=False))
-    return {"matchs": good_matchs}
 
+    # 全良い組み合わせから1つランダムに組み合わせを抽出する(先頭の1件とするとDBからSELECTした順番に依存するため)
+    good_match_count = len(good_matchs)
+    randoms = list(range(good_match_count - 1))
+    random.shuffle(randoms)
+    COURT_COUNT = 4
+    court_occupied = 0 # すでに埋まったコートの数
+    # 抽出した組み合わせのメンバーのリストを作成する
+    def get_players(match):
+        players = []
+        players.append(match["pair1"]["player1"]["name"])
+        players.append(match["pair1"]["player2"]["name"])
+        players.append(match["pair2"]["player1"]["name"])
+        players.append(match["pair2"]["player2"]["name"])
+        return players
+    players = []
+    fixed_matchs = []
+    for i in randoms:
+        match = good_matchs[i]
+        new_players = get_players(match)
+        # すでにコートに入ることが決まっているプレイヤーが次の組み合わせにも存在したらスキップ
+        if set(players) & set(new_players):
+            continue
+        else:
+            fixed_matchs.append(match)
+            players.extend(new_players)
+            court_occupied += 1
+        # コート数分だけ組み合わせが決まれば終了
+        if COURT_COUNT == court_occupied:
+            break
+    logging.debug(fixed_matchs)
+    # 次の組み合わせを選択する
+    return {"matchs": fixed_matchs}
+
+    # TODO: その日のコート数に応じて試合を選出する(4コートであれば4試合分、3コートであれば3試合分)
     # TODO: レベル差が小さい組み合わせを優先する
     # TODO: 試合回数の少ないプレイヤーを優先する
     # TODO: 休憩中のプレイヤーは選ばない
