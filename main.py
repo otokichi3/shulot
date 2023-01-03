@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
@@ -8,10 +10,11 @@ import os
 import logging
 import json
 
-
-formatter = "[%(asctime)s][%(levelname)s][%(filename)s:%(lineno)d %(funcName)s] %(message)s"
+formatter = (
+    "[%(asctime)s][%(levelname)s][%(filename)s:%(lineno)d %(funcName)s] %(message)s"
+)
 logging.basicConfig(level=logging.DEBUG, format=formatter)
-# logging.disable(logging.CRITICAL)
+# logging.disable(logging.INFO)
 
 # SQLAlchemyのCRUD操作
 # https://qiita.com/curry__30/items/432a21426c02a68e77e8#read
@@ -24,6 +27,21 @@ DB_HOST = os.getenv("DB_HOST")
 ALLOWABLE_ERROR = int(os.getenv("ALLOWABLE_ERROR"))
 
 app = FastAPI()
+
+
+origins = [
+    "null",
+    "http://localhost",
+    "http://localhost:8080",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 engine = create_engine(
     f"mysql+mysqlconnector://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}"
@@ -61,7 +79,7 @@ def mylogging(func):
     return wrapper
 
 
-@app.get("/")
+@app.get("/", status_code=status.HTTP_200_OK)
 async def root():
     ###########################################################################
     # 前提となる考え方
@@ -91,13 +109,15 @@ async def root():
             if is_level_equal(
                 pairs[i]["pair_level"], pairs[j]["pair_level"], ALLOWABLE_ERROR
             ):
-                matchs.append({"pair1":pairs[i], "pair2":pairs[j]})
+                matchs.append({"pair1": pairs[i], "pair2": pairs[j]})
 
     # 対戦する二つのペアに同じ人がいる場合にその組み合わせを除外する
     # ※リスト内包表記を使って新しいリストを作成し、除外を実現する
-    good_matchs = [m for m in matchs if not (is_player_duplicated(m["pair1"], m["pair2"]))]
+    good_matchs = [
+        m for m in matchs if not (is_player_duplicated(m["pair1"], m["pair2"]))
+    ]
     logging.debug(json.dumps(good_matchs, ensure_ascii=False))
-    return json.dumps(good_matchs, ensure_ascii=False)
+    return {"matchs": good_matchs}
 
     # TODO: レベル差が小さい組み合わせを優先する
     # TODO: 試合回数の少ないプレイヤーを優先する
