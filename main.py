@@ -88,7 +88,12 @@ async def root():
     # ・ひとまずすべての組み合わせを列挙してからNGを除外していく
     #   ・例えば自ペアと相手ペアに同じ人がいても気にしない（影分身問題）
     ###########################################################################
-    players = db_session.query(Player).all()
+    # TODO: その日の参加回数、休憩フラグをDBから取得する
+    # レコード順に依存しないようランダムに取得する
+    # 高々30レコード程度のため RAND() によるオーバーヘッドは無視する
+    sql = "SELECT name, level, sex FROM player ORDER BY RAND()"
+    players = db_session.execute(sql).all()
+    # players = db_session.query(Player).all()
     # 与えられたメンバーリストから(無条件に)考えられるすべてのペアを作成する
     pairs = []
     player_count = len(players)
@@ -99,10 +104,12 @@ async def root():
                     "player1": {
                         "name": players[i].name,
                         "level": players[i].level,
+                        "sex": players[i].sex,
                     },
                     "player2": {
                         "name": players[j].name,
                         "level": players[j].level,
+                        "sex": players[j].sex,
                     },
                     "pair_level": players[i].level + players[j].level,
                 }
@@ -119,6 +126,10 @@ async def root():
             ):
                 matchs.append({"pair1": pairs[i], "pair2": pairs[j]})
 
+    # TODO: 休憩する人がいる組み合わせを除外する
+    # TODO: すでに対戦した組み合わせを除外する（まったく同じペア、メンバーのとき）
+    #   TODO: 対戦リストを作成する
+
     # 対戦する二つのペアに同じ人がいる場合にその組み合わせを除外する
     # ※リスト内包表記を使って新しいリストを作成し、除外を実現する
     good_matchs = [
@@ -126,12 +137,6 @@ async def root():
     ]
     logging.debug(json.dumps(good_matchs, ensure_ascii=False))
 
-    # 全良い組み合わせから1つランダムに組み合わせを抽出する(先頭の1件とするとDBからSELECTした順番に依存するため)
-    good_match_count = len(good_matchs)
-    randoms = list(range(good_match_count - 1))
-    random.shuffle(randoms)
-    COURT_COUNT = 4
-    court_occupied = 0 # すでに埋まったコートの数
     # 抽出した組み合わせのメンバーのリストを作成する
     def get_players(match):
         players = []
@@ -140,9 +145,14 @@ async def root():
         players.append(match["pair2"]["player1"]["name"])
         players.append(match["pair2"]["player2"]["name"])
         return players
+
+    # TODO: 組み合わせに入っているプレイヤー全員の合計参加回数が少ない順にリストを並べ替える
+
     players = []
     fixed_matchs = []
-    for i in randoms:
+    COURT_COUNT = 4  # TODO: その日のコート数に合わせて設定する
+    court_occupied = 0  # すでに埋まったコートの数
+    for i in range(len(good_matchs) - 1):
         match = good_matchs[i]
         new_players = get_players(match)
         # すでにコートに入ることが決まっているプレイヤーが次の組み合わせにも存在したらスキップ
@@ -155,24 +165,23 @@ async def root():
         # コート数分だけ組み合わせが決まれば終了
         if COURT_COUNT == court_occupied:
             break
+    
     logging.debug(fixed_matchs)
-    # 次の組み合わせを選択する
+
     return {"matchs": fixed_matchs}
 
-    # TODO: その日のコート数に応じて試合を選出する(4コートであれば4試合分、3コートであれば3試合分)
     # TODO: レベル差が小さい組み合わせを優先する
+    # TODO: ペアとのレベル差が小さい組み合わせを優先する(1+7vs4+4より3+5vs4+4)
     # TODO: 試合回数の少ないプレイヤーを優先する
     # TODO: 休憩中のプレイヤーは選ばない
     # TODO: NGペアを作成しない（AさんとBさんは一緒にしてはいけない）
-    # TODO: ペアとのレベル差が小さい組み合わせを優先する(1+7vs4+4より3+5vs4+4)
 
 
 # レベル差が許容誤差の範囲内かを判定する
 @mylogging
 def is_level_equal(pair1_level, pair2_level, allowable_error=0):
-    equal = abs(pair1_level - pair2_level) <= allowable_error
     logging.debug(json.dumps([pair1_level, pair2_level, allowable_error]))
-    return equal
+    return abs(pair1_level - pair2_level) <= allowable_error
 
 
 # 二つのペアに重複するプレイヤーが存在するかを判定する（同一プレイヤーが２つのペアには所属出来ない）
