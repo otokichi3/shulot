@@ -20,7 +20,7 @@
 						</v-row>
 						<v-row>
 							<v-col col="5" class="mt-3 mb-3 pa-0"><v-divider border-width="100" /></v-col>
-							<v-col col="1" class="mr-0 ml-0 pa-0">vs</v-col>
+							<v-col col="1" class="mr-n3 ml-n3 pa-0">vs</v-col>
 							<v-col col="5" class="mt-3 mb-3 pa-0"><v-divider /></v-col>
 						</v-row>
 						<v-row>
@@ -37,13 +37,15 @@
 				</v-card>
 			</v-col>
 		</v-row>
-		<v-row class="justify-center">
-			<v-col cols="4">
+		<v-row>
+			<v-col class="text-center">
 				<v-btn color="light-green" @click="getMatchList">
 					試合を組む
 				</v-btn>
 			</v-col>
-			<v-col cols="4">
+		</v-row>
+		<v-row>
+			<v-col class="text-center">
 				<v-btn color="blue-grey lighten-4" :disabled="isMatchConfirmed" @click="confirmMatch">
 					試合確定
 				</v-btn>
