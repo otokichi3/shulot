@@ -1,6 +1,5 @@
 from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
@@ -9,8 +8,6 @@ from dotenv import load_dotenv
 import os
 import logging
 import json
-import random
-import numpy
 
 formatter = (
     "[%(asctime)s][%(levelname)s][%(filename)s:%(lineno)d %(funcName)s] %(message)s"

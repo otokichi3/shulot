@@ -1,5 +1,4 @@
 DROP TABLE IF EXISTS shulot.player;
-
 CREATE TABLE IF NOT EXISTS shulot.player (
 	id varchar(255) NOT NULL PRIMARY KEY,
 	name varchar(64) NOT NULL,
