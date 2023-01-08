@@ -5,6 +5,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, TIMESTAMP
 from dotenv import load_dotenv
+from pydantic import BaseModel
 import os
 import logging
 import json
@@ -13,7 +14,7 @@ formatter = (
     "[%(asctime)s][%(levelname)s][%(filename)s:%(lineno)d %(funcName)s] %(message)s"
 )
 logging.basicConfig(level=logging.DEBUG, format=formatter)
-logging.disable(logging.INFO)
+logging.disable(logging.DEBUG)
 
 # SQLAlchemyのCRUD操作
 # https://qiita.com/curry__30/items/432a21426c02a68e77e8#read
@@ -57,15 +58,51 @@ session = sessionmaker(engine)
 db_session = scoped_session(session)
 
 
-class Player(Base):
+class PlayerOrm(Base):
     __tablename__ = "player"
-    id = Column(String(255), primary_key=True)
-    name = Column(String(255), nullable=False)
+    id = Column(String(64), primary_key=True)
+    name = Column(String(64), nullable=False)
     level = Column(Integer, nullable=False)
-    sex = Column(Integer)
+    sex = Column(Integer, nullable=True)
+    on_break = Column(Integer, nullable=True)
     created_at = Column(TIMESTAMP)
     updated_at = Column(TIMESTAMP)
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "level": self.level,
+            "sex": self.sex,
+            "on_break": self.on_break,
+        }
+
+# class PairOrm(Base):
+#     __tablename__ = "pair"
+#     id :str = Column(String(64), primary_key=True, nullable=True)
+#     player1_id :str = Column(String(64), nullable=False)
+#     player2_id :str = Column(String(64), nullable=False)
+#     created_at :str = Column(TIMESTAMP, nullable=True)
+#     updated_at :str = Column(TIMESTAMP, nullable=True)
+
+class Pair(BaseModel):
+    player1_id :str
+    player2_id :str
+
+class Match(BaseModel):
+    pair1_id :str
+    pair2_id :str
+
+# フロントエンドから受け取るリクエストボディ用のクラス
+# class Match():
+#     __tablename__ = "match"
+#     id = Column(String(64), primary_key=True)
+#     name = Column(String(64), nullable=False)
+#     level = Column(Integer, nullable=False)
+#     sex = Column(Integer, nullable=True)
+#     on_break = Column(Integer, nullable=True)
+#     created_at = Column(TIMESTAMP, nullable=True)
+#     updated_at = Column(TIMESTAMP, nullable=True)
 
 # ロギングデコレータ
 def mylogging(func):
@@ -88,9 +125,9 @@ async def root():
     # TODO: その日の参加回数、休憩フラグをDBから取得する
     # レコード順に依存しないようランダムに取得する
     # 高々30レコード程度のため RAND() によるオーバーヘッドは無視する
-    sql = "SELECT name, level, sex FROM player ORDER BY RAND()"
-    players = db_session.execute(sql).all()
-    # players = db_session.query(Player).all()
+    # sql = "SELECT id, name, level, sex, on_break FROM player ORDER BY RAND()"
+    # players = db_session.execute(sql).all()
+    players = db_session.query(PlayerOrm).all()
     # 与えられたメンバーリストから(無条件に)考えられるすべてのペアを作成する
     pairs = []
     player_count = len(players)
@@ -98,16 +135,8 @@ async def root():
         for j in range(i + 1, player_count):
             pairs.append(
                 {
-                    "player1": {
-                        "name": players[i].name,
-                        "level": players[i].level,
-                        "sex": players[i].sex,
-                    },
-                    "player2": {
-                        "name": players[j].name,
-                        "level": players[j].level,
-                        "sex": players[j].sex,
-                    },
+                    "player1": players[i].to_dict(),
+                    "player2": players[j].to_dict(),
                     "pair_level": players[i].level + players[j].level,
                 }
             )
@@ -162,7 +191,7 @@ async def root():
         # コート数分だけ組み合わせが決まれば終了
         if COURT_COUNT == court_occupied:
             break
-    
+
     logging.debug(fixed_matchs)
 
     return {"matchs": fixed_matchs}
@@ -173,6 +202,16 @@ async def root():
     # TODO: 休憩中のプレイヤーは選ばない
     # TODO: NGペアを作成しない（AさんとBさんは一緒にしてはいけない）
 
+
+@app.post("/pairs", status_code=status.HTTP_201_CREATED)
+async def pairs(pair: Pair):
+    logging.info(pair)
+    return "pair_id"
+
+@app.post("/matchs", status_code=status.HTTP_201_CREATED)
+async def pairs(match: Match):
+    logging.info(match)
+    return "match_id"
 
 # レベル差が許容誤差の範囲内かを判定する
 @mylogging

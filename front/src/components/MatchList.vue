@@ -39,14 +39,14 @@
 		</v-row>
 		<v-row>
 			<v-col class="text-center">
-				<v-btn color="light-green" @click="getMatchList">
+				<v-btn color="light-green" :disabled="isMatchFixed" @click="getMatchList">
 					試合を組む
 				</v-btn>
 			</v-col>
 		</v-row>
 		<v-row>
 			<v-col class="text-center">
-				<v-btn color="blue-grey lighten-4" :disabled="isMatchConfirmed" @click="confirmMatch">
+				<v-btn color="blue-grey lighten-4" :disabled="isMatchFixed" @click="confirmMatch">
 					試合確定
 				</v-btn>
 			</v-col>
@@ -60,7 +60,7 @@ import axios from 'axios';
 export default {
 	name: 'MatchList',
 	data: () => ({
-		isMatchConfirmed: true,
+		isMatchFixed: false,
 		info: [
 			{
 				pair1: { player1: { name: "　", level: 0, sex: 0, }, player2: { name: "　", level: 0, sex: 0, }, },
@@ -79,15 +79,43 @@ export default {
 				pair2: { player1: { name: "　", level: 0, sex: 0, }, player2: { name: "　", level: 0, sex: 0, }, }
 			},
 		],
+		create_result: null,
+		backend_host: 'http://localhost:8000',
+		pair_id: [],
 	}),
 	methods: {
 		confirmMatch() {
-			// TODO: 確定した組み合わせをAPIに投げる
-			this.isMatchConfirmed = true;
+			// 試合確定フラグを立てる
+			this.isMatchFree = false;
+			this.isMatchFixed = true;
+
+			// 確定したペア、組み合わせを登録する
+			for (let key in this.info) {
+				let pair_id = [];
+				let pair1 = {
+					'player1_id': this.info[key].pair1.player1.id,
+					'player2_id': this.info[key].pair1.player2.id,
+				}
+				let pair2 = {
+					'player1_id': this.info[key].pair2.player1.id,
+					'player2_id': this.info[key].pair2.player2.id,
+				}
+				Promise.resolve()
+					// 組み合わせごとのペアをテーブルに登録する
+					.then(() => axios.post(this.backend_host + '/pairs', pair1))
+					.then(res => { pair_id.push(res.data) })
+					.then(() => axios.post(this.backend_host + '/pairs', pair2))
+					.then(res => { pair_id.push(res.data) })
+					// 登録したペア二つを組み合わせテーブルに登録する
+					.then(() => axios.post(this.backend_host + '/matchs', { 'pair1_id': pair_id[0], 'pair2_id': pair_id[1], },))
+					.then(res => { console.log(res) })
+					.catch(e => { console.log(e) })
+					.finally(() => { pair_id = [] })
+			}
 		},
 		getMatchList() {
 			axios
-				.get('http://localhost:8000')
+				.get(this.backend_host)
 				.then(res => (this.info = res.data.matchs))
 				.catch((error) => console.log(error));
 			this.isMatchConfirmed = false;
