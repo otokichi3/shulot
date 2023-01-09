@@ -54,7 +54,8 @@
 		</v-row>
 		<v-row>
 			<v-col class="text-center">
-				<v-btn color="blue lighten-4" min-width="150" :disabled="isGameEnd || loading2" :loading="loading2" @click="loader = 'loading2'; nextMatch()">
+				<v-btn color="blue lighten-4" min-width="150" :disabled="isGameEnd || loading2" :loading="loading2"
+					@click="loader = 'loading2'; nextMatch()">
 					次の試合
 				</v-btn>
 			</v-col>
@@ -141,9 +142,13 @@ export default {
 			this.isGameEnd = false;
 		},
 		getMatchList() {
-			axios
-				.get(this.backend_host)
-				.then(res => {this.matchs = res.data.matchs; console.log(this.matchs)})
+			fetch(this.backend_host)
+				.then(res => { return res.json() })
+				.then(res => {
+					setTimeout(() => {
+						this.matchs = res.matchs
+					}, 700) // TODO: だいたい700msで返って来る、というだけの700
+				})
 				.catch((error) => console.log(error));
 			this.isMatchFixed = false;
 		},
