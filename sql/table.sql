@@ -1,3 +1,4 @@
+-- プレイヤー情報
 DROP TABLE IF EXISTS shulot.player;
 
 CREATE TABLE IF NOT EXISTS shulot.player (
@@ -6,6 +7,16 @@ CREATE TABLE IF NOT EXISTS shulot.player (
 	sex TINYINT,
 	level TINYINT NOT NULL DEFAULT(3),
 	on_break TINYINT NOT NULL DEFAULT(0),
+	created_at TIMESTAMP DEFAULT(CURRENT_TIMESTAMP),
+	updated_at TIMESTAMP DEFAULT(CURRENT_TIMESTAMP)
+);
+
+-- 参加履歴
+DROP TABLE IF EXISTS shulot.participation_history;
+
+CREATE TABLE IF NOT EXISTS shulot.participation_history (
+	id VARCHAR(64) NOT NULL PRIMARY KEY,
+	player_id VARCHAR(64) NOT NULL,
 	created_at TIMESTAMP DEFAULT(CURRENT_TIMESTAMP),
 	updated_at TIMESTAMP DEFAULT(CURRENT_TIMESTAMP)
 );
@@ -38,8 +49,9 @@ CREATE TABLE IF NOT EXISTS shulot.game (
 	id VARCHAR(64) NOT NULL PRIMARY KEY,
 	match_id VARCHAR(64) NOT NULL,
 	winner_id VARCHAR(64) COMMENT '勝者のペアID',
+	winner_score TINYINT,
 	loser_id VARCHAR(64) COMMENT '敗者のペアID',
-	score VARCHAR(5) COMMENT '21-16形式',
+	loser_score TINYINT,
 	created_at TIMESTAMP DEFAULT(CURRENT_TIMESTAMP),
 	updated_at TIMESTAMP DEFAULT(CURRENT_TIMESTAMP)
 );
