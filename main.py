@@ -3,12 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, TIMESTAMP
+from sqlalchemy import Column, Integer, String, TIMESTAMP, asc, func, or_, and_
+from sqlalchemy.dialects import mysql
 from dotenv import load_dotenv
 from pydantic import BaseModel
 import os
 import logging
 import json
+import random
+import datetime
 
 formatter = (
     "[%(asctime)s][%(levelname)s][%(filename)s:%(lineno)d %(funcName)s] %(message)s"
@@ -58,7 +61,7 @@ session = sessionmaker(engine)
 db_session = scoped_session(session)
 
 
-class PlayerOrm(Base):
+class PlayerTable(Base):
     __tablename__ = "player"
     id = Column(String(64), primary_key=True)
     name = Column(String(64), nullable=False)
@@ -77,32 +80,33 @@ class PlayerOrm(Base):
             "on_break": self.on_break,
         }
 
-# class PairOrm(Base):
-#     __tablename__ = "pair"
-#     id :str = Column(String(64), primary_key=True, nullable=True)
-#     player1_id :str = Column(String(64), nullable=False)
-#     player2_id :str = Column(String(64), nullable=False)
-#     created_at :str = Column(TIMESTAMP, nullable=True)
-#     updated_at :str = Column(TIMESTAMP, nullable=True)
+
+class PairTable(Base):
+    __tablename__ = "pair"
+    id: str = Column(String(64), primary_key=True)
+    player1_id: str = Column(String(64), nullable=False)
+    player2_id: str = Column(String(64), nullable=False)
+    created_at: str = Column(TIMESTAMP, nullable=True)
+    updated_at: str = Column(TIMESTAMP, nullable=True)
+
+
+class ParticipationHistoryTable(Base):
+    __tablename__ = "participation_history"
+    id: str = Column(String(64), primary_key=True)
+    player_id: str = Column(String(64), nullable=False)
+    created_at: str = Column(TIMESTAMP, nullable=True)
+    updated_at: str = Column(TIMESTAMP, nullable=True)
+
 
 class Pair(BaseModel):
-    player1_id :str
-    player2_id :str
+    player1_id: str
+    player2_id: str
+
 
 class Match(BaseModel):
-    pair1_id :str
-    pair2_id :str
+    pair1_id: str
+    pair2_id: str
 
-# フロントエンドから受け取るリクエストボディ用のクラス
-# class Match():
-#     __tablename__ = "match"
-#     id = Column(String(64), primary_key=True)
-#     name = Column(String(64), nullable=False)
-#     level = Column(Integer, nullable=False)
-#     sex = Column(Integer, nullable=True)
-#     on_break = Column(Integer, nullable=True)
-#     created_at = Column(TIMESTAMP, nullable=True)
-#     updated_at = Column(TIMESTAMP, nullable=True)
 
 # ロギングデコレータ
 def mylogging(func):
@@ -116,28 +120,44 @@ def mylogging(func):
 
 
 @app.get("/", status_code=status.HTTP_200_OK)
-async def root():
+def root():
     ###########################################################################
     # 前提となる考え方
     # ・ひとまずすべての組み合わせを列挙してからNGを除外していく
     #   ・例えば自ペアと相手ペアに同じ人がいても気にしない（影分身問題）
+    #   ・休憩中でも関係ない
+    #   ・参加回数も取得するがSQLではソートしない（後で並び替える）
     ###########################################################################
-    # TODO: その日の参加回数、休憩フラグをDBから取得する
-    # レコード順に依存しないようランダムに取得する
-    # 高々30レコード程度のため RAND() によるオーバーヘッドは無視する
-    # sql = "SELECT id, name, level, sex, on_break FROM player ORDER BY RAND()"
-    # players = db_session.execute(sql).all()
-    players = db_session.query(PlayerOrm).all()
+    # 実行クエリをログに出すため、クエリの実行はしない
+    # ※レコード順に依存しないようランダムに取得する
+    # ※高々30レコード程度のため RAND() によるオーバーヘッドは無視する
+    players_query = (
+        db_session.query(PlayerTable, func.Count(ParticipationHistoryTable.player_id))
+        .join(
+            ParticipationHistoryTable,
+            and_(
+                ParticipationHistoryTable.player_id == PlayerTable.id,
+                ParticipationHistoryTable.created_at >= str(datetime.date.today()),
+            ),
+            isouter=True,
+        )
+        .group_by(PlayerTable.id)
+        .filter(PlayerTable.on_break == 0)
+        .order_by(asc(func.Count(ParticipationHistoryTable.player_id)), func.rand())
+    )
+    logging.debug(players_query.statement.compile(dialect=mysql.dialect(), compile_kwargs={"literal_binds": True}))
+    players = players_query.all()
+    player_count = len(players)
+
     # 与えられたメンバーリストから(無条件に)考えられるすべてのペアを作成する
     pairs = []
-    player_count = len(players)
     for i in range(player_count):
         for j in range(i + 1, player_count):
             pairs.append(
                 {
-                    "player1": players[i].to_dict(),
-                    "player2": players[j].to_dict(),
-                    "pair_level": players[i].level + players[j].level,
+                    "player1": players[i][0].to_dict(),
+                    "player2": players[j][0].to_dict(),
+                    "pair_level": players[i][0].level + players[j][0].level,
                 }
             )
     logging.debug(json.dumps(pairs, ensure_ascii=False))
@@ -152,7 +172,6 @@ async def root():
             ):
                 matchs.append({"pair1": pairs[i], "pair2": pairs[j]})
 
-    # TODO: 休憩する人がいる組み合わせを除外する
     # TODO: すでに対戦した組み合わせを除外する（まったく同じペア、メンバーのとき）
     #   TODO: 対戦リストを作成する
 
@@ -203,15 +222,18 @@ async def root():
     # TODO: NGペアを作成しない（AさんとBさんは一緒にしてはいけない）
 
 
+# TODO: プレイヤーの参加履歴を登録する
 @app.post("/pairs", status_code=status.HTTP_201_CREATED)
 async def pairs(pair: Pair):
     logging.info(pair)
     return "pair_id"
 
+
 @app.post("/matchs", status_code=status.HTTP_201_CREATED)
 async def pairs(match: Match):
     logging.info(match)
     return "match_id"
+
 
 # レベル差が許容誤差の範囲内かを判定する
 @mylogging
