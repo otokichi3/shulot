@@ -10,7 +10,6 @@ from pydantic import BaseModel
 import os
 import logging
 import json
-import random
 import datetime
 
 formatter = (
@@ -183,6 +182,7 @@ def root():
                     "player1": players[i][0].to_dict(),
                     "player2": players[j][0].to_dict(),
                     "pair_level": players[i][0].level + players[j][0].level,
+                    "participation_count": players[i][1] + players[i][1],
                 }
             )
     logging.debug(json.dumps(pairs, ensure_ascii=False))
@@ -195,7 +195,13 @@ def root():
             if is_level_equal(
                 pairs[i]["pair_level"], pairs[j]["pair_level"], ALLOWABLE_ERROR
             ):
-                matchs.append({"pair1": pairs[i], "pair2": pairs[j]})
+                matchs.append(
+                    {
+                        "pair1": pairs[i],
+                        "pair2": pairs[j],
+                        "participation_count": pairs[i]["participation_count"] + pairs[j]["participation_count"]
+                    }
+                )
 
     # 対戦する二つのペアに同じ人がいる場合にその組み合わせを除外する
     # ※リスト内包表記を使って新しいリストを作成し、除外を実現する
@@ -204,42 +210,9 @@ def root():
     ]
     logging.debug(json.dumps(good_matchs, ensure_ascii=False))
 
-    pair1 = aliased(PairTable)
-    pair2 = aliased(PairTable)
-    todays_matchs_query = (
-        db_session.query(
-            MatchTable,
-            pair1.player1_id,
-            pair1.player2_id,
-            pair2.player1_id,
-            pair2.player2_id,
-        )
-        .join(
-            pair1,
-            and_(
-                pair1.id == MatchTable.pair1_id,
-                pair1.created_at >= str(datetime.date.today()),
-            ),
-            isouter = False,
-        )
-        .join(
-            pair2,
-            and_(
-                pair2.id == MatchTable.pair2_id,
-                pair2.created_at >= str(datetime.date.today()),
-            ),
-            isouter = False,
-        )
-        .filter(MatchTable.created_at >= str(datetime.date.today()))
-    )
-    logging.info(todays_matchs_query.statement.compile(dialect=mysql.dialect(), compile_kwargs={"literal_binds": True}))
-    todays_matchs = todays_matchs_query.all()
-    for m in todays_matchs:
-        logging.info(m)
-        # TODO: good_matchsとtodays_matchsの重複を削除する
-    return 0
+    # TODO: 組み合わせ、ペアがそれぞれ同じメンバーの組み合わせを除外する
+    remove_duplicated_matchs()
 
-    # 抽出した組み合わせのメンバーのリストを作成する
     def get_players(match):
         players = []
         players.append(match["pair1"]["player1"]["name"])
@@ -249,6 +222,19 @@ def root():
         return players
 
     # TODO: 組み合わせに入っているプレイヤー全員の合計参加回数が少ない順にリストを並べ替える
+    logging.info(len(good_matchs))
+    return 0
+    logging.info('---before sort')
+    for g in good_matchs:
+        logging.info(g["participation_count"])
+    sorted(good_matchs, key=lambda x: x["participation_count"])
+    # logging.info(good_matchs[0]["participation_count"])
+    # logging.info(good_matchs)
+    logging.info('---after sort')
+    for g in good_matchs:
+        logging.info(g["participation_count"])
+    # logging.info(good_matchs[0]['pair2']['participation_count'])
+    return 0
 
     players = []
     fixed_matchs = []
@@ -309,3 +295,58 @@ def is_player_duplicated(pair1, pair2):
         or pair1["player2"]["name"] == pair2["player1"]["name"]
         or pair1["player2"]["name"] == pair2["player2"]["name"]
     )
+
+@mylogging
+def remove_duplicated_matchs():
+    # (例1) 除外するパターン(組み合わせ内もペア内もメンバーが同じ。)
+    # yoshizaki:yamae vs zakiyama:tatsuma
+    # zakiyama:tatsuma vs yoshizaki:yamae
+    # (例2) 除外しないパターン(組み合わせ内のメンバーは同じだがペア内は異なる。)
+    # yoshizaki:yamae vs zakiyama:tatsuma
+    # yoshizaki:tatsuma vs zakiyama:yamae
+    # 抽出した組み合わせのメンバーのリストを作成する
+    # pair1 = aliased(PairTable)
+    # pair2 = aliased(PairTable)
+    # todays_matchs_query = (
+    #     db_session.query(
+    #         MatchTable,
+    #         pair1.player1_id,
+    #         pair1.player2_id,
+    #         pair2.player1_id,
+    #         pair2.player2_id,
+    #     )
+    #     .join(
+    #         pair1,
+    #         and_(
+    #             pair1.id == MatchTable.pair1_id,
+    #             pair1.created_at >= str(datetime.date.today()),
+    #         ),
+    #         isouter = False,
+    #     )
+    #     .join(
+    #         pair2,
+    #         and_(
+    #             pair2.id == MatchTable.pair2_id,
+    #             pair2.created_at >= str(datetime.date.today()),
+    #         ),
+    #         isouter = False,
+    #     )
+    #     .filter(MatchTable.created_at >= str(datetime.date.today()))
+    # )
+    # logging.debug(todays_matchs_query.statement.compile(dialect=mysql.dialect(), compile_kwargs={"literal_binds": True}))
+    # todays_matchs = todays_matchs_query.all()
+    # for t in todays_matchs:
+    #     tl = [t[1], t[2], t[3], t[4]]
+    #     for g in good_matchs:
+    #         gl = [
+    #             g['pair1']['player1']['id'],
+    #             g['pair1']['player2']['id'],
+    #             g['pair2']['player1']['id'],
+    #             g['pair2']['player2']['id'],
+    #         ]
+    #         # setにすると順番という考え方がなくなるため、順不同で一致する
+    #         logging.info('tl:{}'.format(set(tl)))
+    #         logging.info('gl:{}'.format(set(gl)))
+    #         logging.info(set(tl) == set(gl))
+    #         return 0
+    return 0
