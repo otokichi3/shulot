@@ -1,7 +1,7 @@
 from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm import scoped_session, sessionmaker, aliased
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, TIMESTAMP, asc, func, or_, and_
 from sqlalchemy.dialects import mysql
@@ -89,6 +89,32 @@ class PairTable(Base):
     created_at: str = Column(TIMESTAMP, nullable=True)
     updated_at: str = Column(TIMESTAMP, nullable=True)
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "player1_id": self.player1_id,
+            "player2_id": self.player2_id,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
+
+class MatchTable(Base):
+    __tablename__ = "match"
+    id = Column(String(64), primary_key=True)
+    pair1_id = Column(String(64), nullable=False)
+    pair2_id = Column(String(64), nullable=False)
+    created_at = Column(TIMESTAMP)
+    updated_at = Column(TIMESTAMP)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "pair1_id": self.pair1_id,
+            "pair2_id": self.pair2_id,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
 
 class ParticipationHistoryTable(Base):
     __tablename__ = "participation_history"
@@ -128,7 +154,6 @@ def root():
     #   ・休憩中でも関係ない
     #   ・参加回数も取得するがSQLではソートしない（後で並び替える）
     ###########################################################################
-    # 実行クエリをログに出すため、クエリの実行はしない
     # ※レコード順に依存しないようランダムに取得する
     # ※高々30レコード程度のため RAND() によるオーバーヘッドは無視する
     players_query = (
@@ -172,15 +197,47 @@ def root():
             ):
                 matchs.append({"pair1": pairs[i], "pair2": pairs[j]})
 
-    # TODO: すでに対戦した組み合わせを除外する（まったく同じペア、メンバーのとき）
-    #   TODO: 対戦リストを作成する
-
     # 対戦する二つのペアに同じ人がいる場合にその組み合わせを除外する
     # ※リスト内包表記を使って新しいリストを作成し、除外を実現する
     good_matchs = [
         m for m in matchs if not (is_player_duplicated(m["pair1"], m["pair2"]))
     ]
     logging.debug(json.dumps(good_matchs, ensure_ascii=False))
+
+    pair1 = aliased(PairTable)
+    pair2 = aliased(PairTable)
+    todays_matchs_query = (
+        db_session.query(
+            MatchTable,
+            pair1.player1_id,
+            pair1.player2_id,
+            pair2.player1_id,
+            pair2.player2_id,
+        )
+        .join(
+            pair1,
+            and_(
+                pair1.id == MatchTable.pair1_id,
+                pair1.created_at >= str(datetime.date.today()),
+            ),
+            isouter = False,
+        )
+        .join(
+            pair2,
+            and_(
+                pair2.id == MatchTable.pair2_id,
+                pair2.created_at >= str(datetime.date.today()),
+            ),
+            isouter = False,
+        )
+        .filter(MatchTable.created_at >= str(datetime.date.today()))
+    )
+    logging.info(todays_matchs_query.statement.compile(dialect=mysql.dialect(), compile_kwargs={"literal_binds": True}))
+    todays_matchs = todays_matchs_query.all()
+    for m in todays_matchs:
+        logging.info(m)
+        # TODO: good_matchsとtodays_matchsの重複を削除する
+    return 0
 
     # 抽出した組み合わせのメンバーのリストを作成する
     def get_players(match):
