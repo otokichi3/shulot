@@ -12,6 +12,8 @@ import logging
 import json
 import datetime
 
+from line_notify_bot import LINENotifyBot
+
 formatter = (
     "[%(asctime)s][%(levelname)s][%(filename)s:%(lineno)d %(funcName)s] %(message)s"
 )
@@ -182,7 +184,7 @@ def root():
                     "player1": players[i][0].to_dict(),
                     "player2": players[j][0].to_dict(),
                     "pair_level": players[i][0].level + players[j][0].level,
-                    "participation_count": players[i][1] + players[i][1],
+                    "participation_count": players[i][1] + players[j][1],
                 }
             )
     logging.debug(json.dumps(pairs, ensure_ascii=False))
@@ -221,27 +223,15 @@ def root():
         players.append(match["pair2"]["player2"]["name"])
         return players
 
-    # TODO: 組み合わせに入っているプレイヤー全員の合計参加回数が少ない順にリストを並べ替える
-    logging.info(len(good_matchs))
-    return 0
-    logging.info('---before sort')
-    for g in good_matchs:
-        logging.info(g["participation_count"])
-    sorted(good_matchs, key=lambda x: x["participation_count"])
-    # logging.info(good_matchs[0]["participation_count"])
-    # logging.info(good_matchs)
-    logging.info('---after sort')
-    for g in good_matchs:
-        logging.info(g["participation_count"])
-    # logging.info(good_matchs[0]['pair2']['participation_count'])
-    return 0
+    # 組み合わせに入っているプレイヤー全員の合計参加回数が少ない順にリストを並べ替える
+    sorted_matchs = sorted(good_matchs, key=lambda x: x["participation_count"], reverse=True)
 
     players = []
     fixed_matchs = []
     COURT_COUNT = 4  # TODO: その日のコート数に合わせて設定する
     court_occupied = 0  # すでに埋まったコートの数
-    for i in range(len(good_matchs) - 1):
-        match = good_matchs[i]
+    for i in range(len(sorted_matchs) - 1):
+        match = sorted_matchs[i]
         new_players = get_players(match)
         # すでにコートに入ることが決まっているプレイヤーが次の組み合わせにも存在したらスキップ
         if set(players) & set(new_players):
@@ -256,7 +246,22 @@ def root():
 
     logging.debug(fixed_matchs)
 
-    return {"matchs": fixed_matchs}
+    msg = "\n【次の試合】"
+    for i, m in enumerate(fixed_matchs):
+        logging.info(i)
+        logging.info(m)
+        msg += "\n試合{}: {} {} vs {} {}".format(
+            i + 1,
+            m["pair1"]["player1"]["name"],
+            m["pair1"]["player2"]["name"],
+            m["pair2"]["player1"]["name"],
+            m["pair2"]["player2"]["name"],
+        )
+    LINE_TOKEN = 'doc8vdAug3XaaicmRv4ABMLu7GvHxPFoMt8srUAupxl'
+    bot = LINENotifyBot(access_token=LINE_TOKEN)
+    bot.send(message=msg)
+    # return {"matchs": fixed_matchs}
+    return msg
 
     # TODO: レベル差が小さい組み合わせを優先する
     # TODO: ペアとのレベル差が小さい組み合わせを優先する(1+7vs4+4より3+5vs4+4)
