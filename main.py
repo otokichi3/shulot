@@ -117,6 +117,7 @@ class MatchTable(Base):
             "updated_at": self.updated_at,
         }
 
+
 class ParticipationHistoryTable(Base):
     __tablename__ = "participation_history"
     id: str = Column(String(64), primary_key=True)
@@ -171,7 +172,11 @@ def root():
         .filter(PlayerTable.on_break == 0)
         .order_by(asc(func.Count(ParticipationHistoryTable.player_id)), func.rand())
     )
-    logging.debug(players_query.statement.compile(dialect=mysql.dialect(), compile_kwargs={"literal_binds": True}))
+    logging.debug(
+        players_query.statement.compile(
+            dialect=mysql.dialect(), compile_kwargs={"literal_binds": True}
+        )
+    )
     players = players_query.all()
     player_count = len(players)
 
@@ -201,7 +206,8 @@ def root():
                     {
                         "pair1": pairs[i],
                         "pair2": pairs[j],
-                        "participation_count": pairs[i]["participation_count"] + pairs[j]["participation_count"]
+                        "participation_count": pairs[i]["participation_count"]
+                        + pairs[j]["participation_count"],
                     }
                 )
 
@@ -224,7 +230,9 @@ def root():
         return players
 
     # 組み合わせに入っているプレイヤー全員の合計参加回数が少ない順にリストを並べ替える
-    sorted_matchs = sorted(good_matchs, key=lambda x: x["participation_count"], reverse=True)
+    sorted_matchs = sorted(
+        good_matchs, key=lambda x: x["participation_count"], reverse=True
+    )
 
     players = []
     fixed_matchs = []
@@ -257,7 +265,7 @@ def root():
             m["pair2"]["player1"]["name"],
             m["pair2"]["player2"]["name"],
         )
-    LINE_TOKEN = 'doc8vdAug3XaaicmRv4ABMLu7GvHxPFoMt8srUAupxl'
+    LINE_TOKEN = "doc8vdAug3XaaicmRv4ABMLu7GvHxPFoMt8srUAupxl"
     bot = LINENotifyBot(access_token=LINE_TOKEN)
     bot.send(message=msg)
     # return {"matchs": fixed_matchs}
@@ -301,14 +309,15 @@ def is_player_duplicated(pair1, pair2):
         or pair1["player2"]["name"] == pair2["player2"]["name"]
     )
 
+
 @mylogging
 def remove_duplicated_matchs():
     # (例1) 除外するパターン(組み合わせ内もペア内もメンバーが同じ。)
-    # yoshizaki:yamae vs zakiyama:tatsuma
-    # zakiyama:tatsuma vs yoshizaki:yamae
+    # sato:kato vs yamamoto:suzuki
+    # yamamoto:suzuki vs sato:kato
     # (例2) 除外しないパターン(組み合わせ内のメンバーは同じだがペア内は異なる。)
-    # yoshizaki:yamae vs zakiyama:tatsuma
-    # yoshizaki:tatsuma vs zakiyama:yamae
+    # sato:kato vs yamamoto:suzuki
+    # sato:suzuki vs yamamoto:kato
     # 抽出した組み合わせのメンバーのリストを作成する
     # pair1 = aliased(PairTable)
     # pair2 = aliased(PairTable)

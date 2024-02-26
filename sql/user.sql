@@ -1,2 +1,2 @@
-CREATE USER shulot IDENTIFIED BY 'yskt1829';
+CREATE USER shulot IDENTIFIED BY 'admin';
 GRANT ALL ON shulot.* TO 'shulot'@'localhost';

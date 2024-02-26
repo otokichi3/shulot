@@ -5,16 +5,16 @@ DELETE FROM shulot.pair;
 INSERT INTO
 	shulot.pair
 VALUES
-	("1", "yoshizaki", "tatsuma", NOW(), NOW());
+	("1", "sato", "suzuki", NOW(), NOW());
 INSERT INTO
 	shulot.pair
 VALUES
-	("2","yoshizaki", "rina", NOW(), NOW());
+	("2","sato", "takahashi", NOW(), NOW());
 INSERT INTO
 	shulot.pair
 VALUES
-	("3","kanazawa", "tomochin", NOW(), NOW());
+	("3","ito", "watanabe", NOW(), NOW());
 INSERT INTO
 	shulot.pair
 VALUES
-	("4","kanazawa", "tomokopyn", NOW(), NOW());
+	("4","ito", "yamamoto", NOW(), NOW());

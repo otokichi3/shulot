@@ -5,23 +5,23 @@ DELETE FROM shulot.player;
 INSERT INTO
 	shulot.player
 VALUES
-	("yoshizaki", "吉崎", 1, 8, 0, NOW(), NOW());
+	("sato", "吉崎", 1, 8, 0, NOW(), NOW());
 INSERT INTO
 	shulot.player
 VALUES
-	("kanazawa", "金澤", 1, 7, 0, NOW(), NOW());
+	("ito", "金澤", 1, 7, 0, NOW(), NOW());
 INSERT INTO
 	shulot.player
 VALUES
-	("zakiyama", "ザキヤマ", 1, 9, 0, NOW(), NOW());
+	("yamamoto", "ザキヤマ", 1, 9, 0, NOW(), NOW());
 INSERT INTO
 	shulot.player
 VALUES
-	("tatsuma", "達真", 1, 4, 0, NOW(), NOW());
+	("suzuki", "達真", 1, 4, 0, NOW(), NOW());
 INSERT INTO
 	shulot.player
 VALUES
-	("yamae", "山江", 1, 6, 0, NOW(), NOW());
+	("kato", "山江", 1, 6, 0, NOW(), NOW());
 INSERT INTO
 	shulot.player
 VALUES
@@ -37,42 +37,42 @@ VALUES
 INSERT INTO
 	shulot.player
 VALUES
-	("iizumi", "飯泉", 1, 8, 0, NOW(), NOW());
+	("nakamura", "飯泉", 1, 8, 0, NOW(), NOW());
 
 -- Women
 INSERT INTO
 	shulot.player
 VALUES
-	("rina", "りな", 2, 3, 0, NOW(), NOW());
+	("takahashi", "高橋", 2, 3, 0, NOW(), NOW());
 INSERT INTO
 	shulot.player
 VALUES
-	("suzumi", "すずみ", 2, 7, 0, NOW(), NOW());
+	("sasaki", "佐々木", 2, 7, 0, NOW(), NOW());
 INSERT INTO
 	shulot.player
 VALUES
-	("fukada", "深田", 2, 7, 0, NOW(), NOW());
+	("yoshida", "吉田", 2, 7, 0, NOW(), NOW());
 INSERT INTO
 	shulot.player
 VALUES
-	("tomochin", "ともちん", 2, 4, 0, NOW(), NOW());
+	("watanabe", "渡辺", 2, 4, 0, NOW(), NOW());
 INSERT INTO
 	shulot.player
 VALUES
-	("akky", "あっきー", 2, 2, 0, NOW(), NOW());
+	("yamaguchi", "山口", 2, 2, 0, NOW(), NOW());
 INSERT INTO
 	shulot.player
 VALUES
-	("okamoto", "岡本嫁", 2, 3, 0, NOW(), NOW());
+	("okamoto", "岡本", 2, 3, 0, NOW(), NOW());
 INSERT INTO
 	shulot.player
 VALUES
-	("mayumin", "まゆみん", 2, 3, 0, NOW(), NOW());
+	("matsumoto", "松本", 2, 3, 0, NOW(), NOW());
 INSERT INTO
 	shulot.player
 VALUES
-	("tomokopyn", "ともちゃん", 2, 4, 0, NOW(), NOW());
+	("yamamoto", "山本", 2, 4, 0, NOW(), NOW());
 INSERT INTO
 	shulot.player
 VALUES
-	("noi", "のい", 2, 4, 0, NOW(), NOW());
+	("inoue", "井上", 2, 4, 0, NOW(), NOW());

@@ -3,25 +3,25 @@ DELETE FROM shulot.participation_history;
 
 INSERT INTO shulot.participation_history
 VALUES
-	(UUID(), "yoshizaki", NOW(), NOW());
+	(UUID(), "sato", NOW(), NOW());
 INSERT INTO shulot.participation_history
 VALUES
-	(UUID(), "kanazawa", NOW(), NOW());
+	(UUID(), "ito", NOW(), NOW());
 INSERT INTO shulot.participation_history
 VALUES
-	(UUID(), "zakiyama", NOW(), NOW());
+	(UUID(), "yamamoto", NOW(), NOW());
 INSERT INTO shulot.participation_history
 VALUES
-	(UUID(), "iizumi", NOW(), NOW());
+	(UUID(), "nakamura", NOW(), NOW());
 INSERT INTO shulot.participation_history
 VALUES
-	(UUID(), "yoshizaki", NOW() + INTERVAL 1 MINUTE, NOW() + INTERVAL 1 MINUTE);
+	(UUID(), "sato", NOW() + INTERVAL 1 MINUTE, NOW() + INTERVAL 1 MINUTE);
 INSERT INTO shulot.participation_history
 VALUES
-	(UUID(), "yamae", NOW() + INTERVAL 1 MINUTE, NOW() + INTERVAL 1 MINUTE);
+	(UUID(), "kato", NOW() + INTERVAL 1 MINUTE, NOW() + INTERVAL 1 MINUTE);
 INSERT INTO shulot.participation_history
 VALUES
-	(UUID(), "fukada", NOW() + INTERVAL 1 MINUTE, NOW() + INTERVAL 1 MINUTE);
+	(UUID(), "yoshida", NOW() + INTERVAL 1 MINUTE, NOW() + INTERVAL 1 MINUTE);
 INSERT INTO shulot.participation_history
 VALUES
-	(UUID(), "noi", NOW() + INTERVAL 1 MINUTE, NOW() + INTERVAL 1 MINUTE);
+	(UUID(), "yamada", NOW() + INTERVAL 1 MINUTE, NOW() + INTERVAL 1 MINUTE);
